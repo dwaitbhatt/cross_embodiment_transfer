@@ -200,6 +200,11 @@ def main():
             utils.evaluate(tgt_eval_env, tgt_agent, 4, logger, step)
             tgt_agent.train_mode()
 
+            print(f"Saving model at step {step}")
+            step_dir = model_dir / f"step_{step:07d}"
+            pathlib.Path(step_dir).mkdir(parents=True, exist_ok=True)
+            tgt_agent.save(step_dir)
+
 
 
 if __name__ == '__main__':

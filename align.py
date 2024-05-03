@@ -8,8 +8,6 @@ import torch.nn.functional as F
 import utils
 from td3 import Actor
 
-optimizers = {'RMSprop': torch.optim.RMSprop, 'Adam': torch.optim.Adam}
-
 class Agent:
     """Base class for adaptation"""
     def __init__(self, obs_dims, act_dims, device):
@@ -36,6 +34,7 @@ class Agent:
             for p in m.parameters():
                 p.requires_grad = False
 
+
 class ObsAgent(Agent):
     def __init__(self, obs_dims, act_dims, device, n_layers=3, hidden_dim=256):
         super().__init__(obs_dims, act_dims, device)
@@ -52,6 +51,13 @@ class ObsAgent(Agent):
         self.actor = Actor(self.lat_obs_dim+self.obj_obs_dim, self.act_dim, n_layers, hidden_dim).to(self.device)
 
         self.modules = [self.obs_enc, self.obs_dec, self.inv_dyn, self.fwd_dyn, self.actor]
+
+    def save(self, model_dir):
+        torch.save(self.actor.state_dict(), f'{model_dir}/actor.pt')
+        torch.save(self.obs_enc.state_dict(), f'{model_dir}/obs_enc.pt')        
+        torch.save(self.obs_dec.state_dict(), f'{model_dir}/obs_dec.pt')
+        torch.save(self.inv_dyn.state_dict(), f'{model_dir}/inv_dyn.pt')
+        torch.save(self.fwd_dyn.state_dict(), f'{model_dir}/fwd_dyn.pt')
 
     def load(self, model_dir):
         self.obs_enc.load_state_dict(torch.load(model_dir/'obs_enc.pt'))
@@ -79,6 +85,7 @@ class ObsAgent(Agent):
             act = np.clip(act, -1, 1)
         return act  
 
+
 class ObsActAgent(ObsAgent):
     def __init__(self, obs_dims, act_dims, device, n_layers=3, hidden_dim=256):
         super().__init__(obs_dims, act_dims, device, n_layers=n_layers, hidden_dim=hidden_dim)
@@ -96,6 +103,11 @@ class ObsActAgent(ObsAgent):
         self.actor = Actor(self.lat_obs_dim+self.obj_obs_dim, self.lat_act_dim+1, n_layers, hidden_dim).to(device)
 
         self.modules += [self.act_enc, self.act_dec]
+
+    def save(self, model_dir):
+        super().save(model_dir)
+        torch.save(self.act_enc.state_dict(), f'{model_dir}/act_enc.pt')        
+        torch.save(self.act_dec.state_dict(), f'{model_dir}/act_dec.pt')
 
     def load(self, model_dir):
         super().load(model_dir)
@@ -119,7 +131,6 @@ class ObsActAgent(ObsAgent):
             act = np.clip(act, -1, 1)
 
         return act
-
 
 
 class ObsAligner:
