@@ -26,7 +26,7 @@ python3 train_bc.py --config configs/Reach/BC_JV.yml
 
 5. Alignment on target Sawyer robot
 ```bash
-python3 train_align --config configs/Reach/align.JV.yml
+python3 train_align.py --config configs/Reach/align.JV.yml
 ```
 
 6. Visualize
