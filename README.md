@@ -22,7 +22,7 @@ python3 generate_demos.py --robot Sawyer
 python3 train_bc.py --config configs/Reach/BC_JV.yml
 ```
 
-[!][Panda][assets/Panda.gif]
+[!][Panda](assets/Panda.gif)
 
 5. Alignment on target Sawyer robot
 ```bash
@@ -34,4 +34,4 @@ python3 train_align --config configs/Reach/align.JV.yml
 python3 visualize.py --config configs/Sawyer/eval.yml
 ```
 
-[!][Sawyer][assets/Sawyer.gif]
+[!][Sawyer](assets/Sawyer.gif)
