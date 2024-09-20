@@ -5,16 +5,16 @@ import io
 import argparse
 
 import numpy as np 
-import torch 
+from tqdm.auto import tqdm
 
 import utils
-from human_policy import ReachPolicy, LiftPolicy, BaseHumanPolicy, PickPlacePolicy
+from human_policy import ReachPolicy, LiftPolicy, BaseHumanPolicy, PickPlacePolicy, StackPolicy, TrackCubePolicy
 
 np.set_printoptions(precision=4, suppress=True)
 
-BOUND_MIN = np.array([-0.3, -0.4, 0.8])     
+BOUND_MIN = np.array([-0.3, -0.4, 0.75])     
 BOUND_MAX = np.array([0.3, 0.4, 1.2])
-
+REWARD_THRESH = {"Reach": 50, "Lift": 50, "PickPlaceBread": 50, "Stack": 50, "TrackCube": 10}
 
 def eplen(episode):
     return len(episode['action'])
@@ -76,6 +76,7 @@ def save_osc_episodes(num_episodes=64, render=False):
     Generate random transitions with bound checking
     """
 
+    # env_name = "TrackCube"
     env_name = "Reach"
     # env_name = "Lift"
     # env_name = "PickPlaceBread"
@@ -88,6 +89,9 @@ def save_osc_episodes(num_episodes=64, render=False):
     if env_name == "Reach":
         policy_cls = ReachPolicy
         env_kwargs = {"horizon": 200, "table_full_size": (0.6, 0.6, 0.00)}
+    elif env_name == "TrackCube":
+        policy_cls = TrackCubePolicy
+        env_kwargs = {"horizon": 100, "table_full_size": (0.8, 0.8, 0.05), "static_cube": True}
     elif env_name == "Lift":
         policy_cls = LiftPolicy
         env_kwargs = {"horizon": 200, "use_touch_obs": True}
@@ -127,7 +131,8 @@ def collect_human_episode(env, policy, render=False, return_joints=False, reset_
         obs = env.reset()
     policy.reset()
 
-    assert (obs['target_pos'] >= BOUND_MIN).all() and (obs['target_pos'] <= BOUND_MAX).all()
+    if "target_pos" in obs:
+        assert (obs['target_pos'] >= BOUND_MIN).all() and (obs['target_pos'] <= BOUND_MAX).all()
 
     # Record the mujoco states so that we load to joint env
     if return_joints:
@@ -144,12 +149,13 @@ def collect_human_episode(env, policy, render=False, return_joints=False, reset_
     episode['action'] = []
     episode['reward'] = []
 
-    while not done:       
+    while env.timestep < env.horizon:       
         action, action_info = policy.predict(obs)
+        # print(f"Current stage: {action_info['stage']}")
         obs, rew, done, info = env.step(action)
 
         if (obs['robot0_eef_pos'] < BOUND_MIN).any() or (obs['robot0_eef_pos'] > BOUND_MAX).any():
-            print(f"Human demo out of bounds at {obs['robot0_eef_pos']}")
+            print(f"Human demo out of bounds with robot eef at {obs['robot0_eef_pos']}")
             if return_joints:
                 return None, None
             else:
@@ -166,7 +172,11 @@ def collect_human_episode(env, policy, render=False, return_joints=False, reset_
         episode['action'].append(action)
         episode['reward'].append(rew)
 
-    print(f"Episode return: {np.sum(episode['reward']):.2f}")
+        # if not done and env._check_success():
+        #     print(f"Timesteps to completion: {env.timestep}")
+        #     done = True
+
+    # print(f"Episode return: {np.sum(episode['reward']):.2f}")
     if env._check_success():
         if return_joints:
             return episode, {'task_info': [task_xml, task_init_state], 
@@ -199,13 +209,13 @@ def collect_random_episode(env, render=False, return_joints=False):
     episode['action'] = []
     episode['reward'] = []
 
-    while not done:       
+    while env.timestep < env.horizon:       
         action = np.random.uniform(low=-1, high=1, size=env.action_dim)
         action[0] += 0.04
         action = np.clip(action, -1, 1)
         obs, rew, done, info = env.step(action)
 
-        if (obs['robot0_eef_pos'] < bound_min).any() or (obs['robot0_eef_pos'] > bound_max).any():
+        if (obs['robot0_eef_pos'] < BOUND_MIN).any() or (obs['robot0_eef_pos'] > BOUND_MAX).any():
             if return_joints:
                 return None, None
             else:
@@ -228,22 +238,25 @@ def collect_random_episode(env, render=False, return_joints=False):
     else:
         return episode
 
-def osc_to_jv(env_name, robots, num_episodes=64, render=False):
+def osc_to_jv(env_name, robots, num_episodes=64, random_demos=False, render=False):
 
     controller_type = "OSC_POSE"
     # controller_type = "OSC_POSITION"
 
     if env_name == "Reach":
         policy_cls = ReachPolicy
-        env_kwargs = {"horizon": 100, "table_full_size": (0.6, 0.6, 0.05)}
+        env_kwargs = {"horizon": 100, "table_full_size": (0.6, 0.6, 0.05)}#, "mount_type": None}
+    elif env_name == "TrackCube":
+        policy_cls = TrackCubePolicy
+        env_kwargs = {"horizon": 100, "table_full_size": (0.6, 0.6, 0.05), 
+                      "static_cube": True, "cube_init_pos_range": (-0.25, 0.25)}
     elif env_name == "Lift":
         policy_cls = LiftPolicy
-        env_kwargs = {"horizon": 200, "use_touch_obs": True, "table_offset": (0, 0, 0.908)}
+        env_kwargs = {"horizon": 200, "use_touch_obs": True, "table_offset": (0, 0, 0.908), "mount_type": None}
         # env_kwargs = {"horizon": 200, "use_touch_obs": True, "table_offset": (0, 0, np.random.uniform(0.85, 0.95))}
     elif env_name == "PickPlaceBread":
         policy_cls = PickPlacePolicy
-        env_kwargs = {"horizon": 200, "use_touch_obs": True, 
-            "bin1_pos": (-0.05, -0.25, 0.90), "bin2_pos": (-0.05, 0.28, 0.90)}
+        env_kwargs = {"horizon": 250, "use_touch_obs": True, "mount_type": None}
     elif env_name == "Stack":
         policy_cls = StackPolicy
         env_kwargs = {"horizon": 200, "use_touch_obs": True, "table_offset": (0, 0, 0.908)}
@@ -255,6 +268,10 @@ def osc_to_jv(env_name, robots, num_episodes=64, render=False):
     elif robots == "Sawyer":
         env_kwargs["gripper_types"] = 'RethinkTouchGripper'
 
+    if random_demos:
+        env_kwargs["horizon"] = 200
+
+    env_kwargs["ignore_done"] = True
     env = utils.make_robosuite_env(env_name, robots, controller_type,
         render=render, **env_kwargs)
     policy = policy_cls(env)
@@ -263,28 +280,33 @@ def osc_to_jv(env_name, robots, num_episodes=64, render=False):
         env_name, robots=robots, controller_type="JOINT_VELOCITY", 
         render=render, **env_kwargs)
 
-    directory = pathlib.Path(f"./human_demonstrations/{env_name}/{robots}/JOINT_VELOCITY")
+    if random_demos:
+        directory = pathlib.Path(f"./random_demos/{env_name}_{env_kwargs['horizon']}/{robots}/JOINT_VELOCITY")
+    else:
+        directory = pathlib.Path(f"./human_demonstrations/{env_name}/{robots}/JOINT_VELOCITY")
     if not directory.exists():
         directory.mkdir(parents=True, exist_ok=False)
 
+    pbar = tqdm(total=num_episodes)
     episodes_saved = 0
     while episodes_saved < num_episodes:
 
-        if episodes_saved % 5 == 0:
+        if episodes_saved % 2 == 0:
             reset_target = False
-        else:
+        elif env_name == "Reach":
             reset_target = True
-        # reset_target = False
+        reset_target = False
 
         episode = None
         while episode is None:
-            episode, ep_info = collect_human_episode(env, policy, render=render, 
-                return_joints=True, reset_target=reset_target)
+            if random_demos:
+                episode, ep_info = collect_random_episode(env, render=render, return_joints=True)
+            else:
+                episode, ep_info = collect_human_episode(env, policy, render=render, 
+                    return_joints=True, reset_target=reset_target)
 
             # if episode is None: 
             #     reset_target = False
-
-            # episode, ep_info = collect_random_episode(env, policy, return_joints=True)
 
         task_xml, task_init_state = ep_info['task_info']
         desired_jps, gripper_actions = ep_info['joint_info']
@@ -333,17 +355,22 @@ def osc_to_jv(env_name, robots, num_episodes=64, render=False):
 
             if done: break
 
-        print(f"Episode {episodes_saved} return: {np.sum(episode['reward']):.2f}")
+        # print(f"Episode {episodes_saved} return: {np.sum(episode['reward']):.2f} (after osc to jv conversion)")
         # print(episode['target_to_robot0_eef_pos'][-1])
         # save_episode(directory, episode)
         # episodes_saved += 1        
 
-        if np.sum(episode['reward']) > 50:
+        # if np.sum(episode['reward']) > REWARD_THRESH[env_name]:
+        if jv_env._check_success() or random_demos:
             save_episode(directory, episode)
+            # print(f"Episode {episodes_saved} saved!\n")
             episodes_saved += 1
         # if jv_env._check_success():
             # save_episode(directory, episode)
             # episodes_saved += 1
+
+        pbar.update(1)
+        pbar.set_description(f"Return for JV converted episode: {np.sum(episode['reward']):.2f}, saved: {jv_env._check_success() or random_demos}")
 
     env.close()
     jv_env.close()
@@ -388,9 +415,11 @@ if __name__ == '__main__':
     parser.add_argument("--env_name", type=str, default="Reach", help="Robosuite task")
     parser.add_argument("--robot", type=str, default="Panda", help="Robot to generate demonstrations")
     parser.add_argument("--num_episodes", type=int, default=10000, help="Number of demonstration episodes to generate")
+    parser.add_argument("--random", action="store_true", help="Generate random demonstrations")
+    parser.add_argument("--render", action="store_true", help="Render demonstrations")
     args = parser.parse_args()
 
-    osc_to_jv(args.env_name, args.robot, args.num_episodes, render=False)
+    osc_to_jv(args.env_name, args.robot, args.num_episodes, random_demos=args.random, render=args.render)
 
 
 

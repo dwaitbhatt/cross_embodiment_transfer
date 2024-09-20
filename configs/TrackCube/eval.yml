@@ -1,9 +1,6 @@
-env_name: Reach
-expert_folder: human_demonstrations
+env_name: TrackCube
 robots: Panda
 controller_type: JOINT_VELOCITY
-total_timesteps: 1000000
-batch_size: 256
 robot_obs_keys:
   - robot0_joint_pos_cos
   - robot0_joint_pos_sin
@@ -14,11 +11,9 @@ lat_act_dim: 4
 env_kwargs:
   horizon: 100
   table_full_size: [0.6, 0.6, 0.05]
-  # mount_type: null
-evaluation:
-  interval: 10000
-  save_interval: 20000
+  cube_init_pos_range: [-0.1, 0.1]
+  ignore_done: True
+  static_cube: True
+num_episodes: 20
+model_dir: logs/09.18.2024/19-56-52_Reach_Panda_JOINT_VELOCITY_BC/models/step_0140000
 seed: 42
-save_buffer: False
-logdir_prefix: null
-suffix: BC_OG

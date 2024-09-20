@@ -9,8 +9,10 @@ obj_obs_keys:
 lat_obs_dim: 4
 lat_act_dim: 4
 env_kwargs:
-  horizon: 200
+  horizon: 100
   table_full_size: [0.6, 0.6, 0.05]
+  # mount_type: null
+  ignore_done: True
 num_episodes: 10
-model_dir: logs/05.02.2024/21-02-37_Reach_Panda_JOINT_VELOCITY_Sawyer_JOINT_VELOCITY_align_cycle/models/step_0004000
+model_dir: trained_models/ReachOG/Sawyer_JV
 seed: 42

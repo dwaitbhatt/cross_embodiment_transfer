@@ -13,7 +13,7 @@ import utils
 import replay_buffer
 from align import ObsActAgent as Agent
 from align import ObsActAligner as Aligner
-
+from tqdm.auto import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -185,7 +185,7 @@ def main():
     tgt_buffer.add_rollouts(demo_paths)
 
     aligner = Aligner(src_agent, tgt_agent, device, log_freq=10)
-    for step in range(params['tgt_align_timesteps']):
+    for step in tqdm(range(params['tgt_align_timesteps']), desc="Aligning Target Agent"):
         for _ in range(5):
             src_obs, src_act, _, src_next_obs, _ = src_buffer.sample()
             tgt_obs, tgt_act, _, tgt_next_obs, _ = tgt_buffer.sample()

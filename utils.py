@@ -12,7 +12,7 @@ from robosuite.wrappers import GymWrapper
 Activation = Union[str, nn.Module]
 
 ROBOSUITE_ENVS = ["Reach", "Door", "Lift", "PickPlaceCan", 
-    "PickPlaceBread", "PickPlaceMilk", "PickPlaceCereal", "Stack"]
+    "PickPlaceBread", "PickPlaceMilk", "PickPlaceCereal", "Stack", "TrackCube"]
 
 _str_to_activation = {
     'relu': nn.ReLU(),
@@ -147,7 +147,7 @@ def make(
         ]
 
     env = GymWrapper(env, keys=obs_keys)
-    env.seed(seed)
+    # env.seed(seed)
     return env
 
 
@@ -192,17 +192,22 @@ def load_episodes(directory, obs_keys, lat_obs_keys=None, capacity=None):
 
 def evaluate(env, agent, num_episodes, L, step):
     ret = []
+    success_count = 0
     for i in range(num_episodes):
-        obs = env.reset()
+        obs, _ = env.reset()
         done = False
         episode_reward = 0
         while not done:
             action = agent.sample_action(obs, deterministic=True)
-            obs, reward, done, _ = env.step(action)
-            episode_reward += reward   
+            obs, reward, done, _, _ = env.step(action)
+            episode_reward += reward
+            if env._check_success():
+                success_count += 1
 
         ret.append(episode_reward)
     L.add_scalar('eval/episode_reward_mean', np.mean(ret), step)
     L.add_scalar('eval/episode_reward_std', np.std(ret), step)
+    L.add_scalar('eval/success_rate', success_count / num_episodes, step)
     L.flush()
+    print(f"Eval | Step: {step} | Success Rate: {success_count / num_episodes} | Reward: {np.mean(ret)}")
 

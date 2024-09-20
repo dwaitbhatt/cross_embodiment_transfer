@@ -6,6 +6,8 @@ import numpy as np
 import torch 
 
 from align import ObsActAgent as Agent
+# from align import BCAgent 
+# from bc import BCAgent as Agent
 import utils
 
 def parse_args():
@@ -59,13 +61,20 @@ def main():
 
 
     for i in range(params['num_episodes']):
-        obs = env.reset()
+        # if i % 5 == 0:
+        #     obs, _ = env.reset()
+        # elif params['env_name'] == 'Reach':
+        #     obs = env.reset_target()
+        #     obs = np.concatenate([obs[k] for k in params['robot_obs_keys']+params['obj_obs_keys']])
+        # else:
+        #     obs, _ = env.reset()
+        obs, _ = env.reset()
         env.render()
         done = False
         episode_reward = 0
-        while not done:
+        while env.timestep < env.horizon:
             action = agent.sample_action(obs, deterministic=True)
-            obs, reward, done, _ = env.step(action)
+            obs, reward, done, _, _ = env.step(action)
             episode_reward += reward   
             env.render()
 
