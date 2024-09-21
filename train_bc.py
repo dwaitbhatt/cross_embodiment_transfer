@@ -10,7 +10,7 @@ from torch.utils.tensorboard import SummaryWriter
 import utils
 import replay_buffer
 from bc import BCObsActAgent as Agent
-
+from tqdm.auto import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -121,11 +121,11 @@ def main():
     demo_paths = utils.load_episodes(demo_dir, params['obs_keys'])
     agent_replay_buffer.add_rollouts(demo_paths)
 
-    for step in range(params['total_timesteps']):
+    for step in tqdm(range(params['total_timesteps']), desc="Training"):
         if step % params['evaluation']['interval'] == 0:
             print(f"Evaluating at step {step}")
             agent.eval_mode()
-            utils.evaluate(eval_env, agent, 4, logger, step) 
+            utils.evaluate(eval_env, agent, 10, logger, step) 
             agent.train_mode()
         if step % params['evaluation']['save_interval'] == 0:
             print(f"Saving model at step {step}")

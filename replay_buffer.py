@@ -37,9 +37,10 @@ class ReplayBuffer(object):
 
         if isinstance(self.obses, np.ndarray):
             if idxs is None:
+                idx_mod = 1 if self.idx == 0 else self.idx
                 idxs = np.random.randint(
-                    0, self.capacity if self.full else self.idx, size=self.batch_size
-                )   
+                    0, self.capacity if self.full else idx_mod, size=self.batch_size
+                ) 
 
             obses = torch.as_tensor(self.obses[idxs], device=self.device).float()
             actions = torch.as_tensor(self.actions[idxs], device=self.device)

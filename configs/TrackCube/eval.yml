@@ -1,4 +1,4 @@
-env_name: Reach
+env_name: TrackCube
 robots: Panda
 controller_type: JOINT_VELOCITY
 robot_obs_keys:
@@ -11,8 +11,9 @@ lat_act_dim: 4
 env_kwargs:
   horizon: 100
   table_full_size: [0.6, 0.6, 0.05]
-  mount_type: null
+  cube_init_pos_range: [-0.1, 0.1]
   ignore_done: True
-num_episodes: 10
-model_dir: logs/09.20.2024/03-57-03_Reach_Panda_JOINT_VELOCITY_BC_initeefposfix_resetevery2/models/step_0980000
+  static_cube: True
+num_episodes: 20
+model_dir: logs/09.18.2024/19-56-52_Reach_Panda_JOINT_VELOCITY_BC/models/step_0140000
 seed: 42

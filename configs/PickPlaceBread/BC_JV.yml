@@ -1,4 +1,4 @@
-env_name: Reach
+env_name: PickPlaceBread
 expert_folder: human_demonstrations
 robots: Panda
 controller_type: JOINT_VELOCITY
@@ -8,12 +8,16 @@ robot_obs_keys:
   - robot0_joint_pos_cos
   - robot0_joint_pos_sin
 obj_obs_keys:
-  - target_to_robot0_eef_pos
+  - Bread_to_robot0_eef_pos
+  - robot0_eef_to_Bread_yaw
+  - Bread_to_Bread_bin_pos
+  - robot0_touch
 lat_obs_dim: 4
 lat_act_dim: 4
 env_kwargs:
-  horizon: 100
-  table_full_size: [0.6, 0.6, 0.05]
+  horizon: 250
+  gripper_types: 'PandaTouchGripper'
+  use_touch_obs: True
   mount_type: null
 evaluation:
   interval: 10000
@@ -21,4 +25,4 @@ evaluation:
 seed: 42
 save_buffer: False
 logdir_prefix: null
-suffix: BC_initeefposfix_resetevery2
+suffix: BC

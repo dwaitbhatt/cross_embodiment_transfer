@@ -464,13 +464,13 @@ class ObsActAligner(ObsAligner):
             L.add_scalar('train_lat_gen/src_obs_cycle_loss', src_obs_cycle_loss.item(), step)
             L.add_scalar('train_lat_gen/src_act_cycle_loss', src_act_cycle_loss.item(), step)
             
-            real_lat_obs = self.src_obs_enc(tgt_obs)
-            real_lat_act = self.src_act_enc(torch.cat([tgt_obs, tgt_act], dim=-1))
+            real_lat_obs = self.src_obs_enc(src_obs)
+            real_lat_act = self.src_act_enc(torch.cat([src_obs, src_act], dim=-1))
             L.add_scalar('valid_lat_gen/lat_obs_diff', F.l1_loss(real_lat_obs, fake_lat_obs), step)
             L.add_scalar('valid_lat_gen/lat_act_diff', F.l1_loss(real_lat_act, fake_lat_act), step)
 
-            real_tgt_obs = self.src_obs_dec(real_lat_obs)
-            real_tgt_act = self.src_act_dec(torch.cat([real_tgt_obs, real_lat_act], dim=-1))
+            real_tgt_obs = tgt_obs # self.src_obs_dec(real_lat_obs)
+            real_tgt_act = tgt_act # self.src_act_dec(torch.cat([real_tgt_obs, real_lat_act], dim=-1))
             fake_tgt_obs = self.tgt_obs_dec(real_lat_obs)
             fake_tgt_act = self.tgt_act_dec(torch.cat([fake_tgt_obs, real_lat_act], dim=-1))
             fake_tgt_act_1 = self.tgt_act_dec(torch.cat([real_tgt_obs, real_lat_act], dim=-1))

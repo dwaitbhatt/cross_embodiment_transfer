@@ -58,7 +58,7 @@ class BaseHumanPolicy:
         """
         Translational motion in all x, y, z directions
         """
-        assert ds.shape[0] == 3
+        assert ds.shape[0] == 3, f"ds has wrong shape: {ds.shape}"
         tol = tol if tol is not None else self.pos_tol
         if np.linalg.norm(ds) > tol:
             completed = False
@@ -108,6 +108,7 @@ class ReachPolicy(BaseHumanPolicy):
         self.obs_names = [
             'target_to_robot0_eef_pos',
         ]
+        self.obj_name = 'target'
 
         env_obs_names = env.observation_names
         for name in self.obs_names:
@@ -125,19 +126,19 @@ class ReachPolicy(BaseHumanPolicy):
 
     def move_x(self, obs, action):
         """Negate the obs since we are moving eef towards object"""
-        rel_pos = -obs[f'target_to_robot0_eef_pos']
+        rel_pos = -obs[f'{self.obj_name}_to_robot0_eef_pos']
         return self.move(rel_pos[0], action, direction='x')
 
     def move_y(self, obs, action):
-        rel_pos = -obs[f'target_to_robot0_eef_pos']
+        rel_pos = -obs[f'{self.obj_name}_to_robot0_eef_pos']
         return self.move(rel_pos[1], action, direction='y')
 
     def move_z(self, obs, action):
-        rel_pos = -obs[f'target_to_robot0_eef_pos']
+        rel_pos = -obs[f'{self.obj_name}_to_robot0_eef_pos']
         return self.move(rel_pos[2], action, direction='z') 
 
     def move_line(self, obs, action):
-        rel_pos = -obs['target_to_robot0_eef_pos']
+        rel_pos = -obs[f'{self.obj_name}_to_robot0_eef_pos']
         return super().move_line(rel_pos, action)
 
     def predict(self, obs):
@@ -151,6 +152,14 @@ class ReachPolicy(BaseHumanPolicy):
         self.completed[curr_stage] = completed
         return action, {'stage': curr_stage, 'completed': completed}
 
+class TrackCubePolicy(ReachPolicy):
+    def predict(self, obs):
+        # action = np.array([0, 0, 0, -1], dtype=np.float32)
+        action = np.zeros(self.act_dim, dtype=np.float32)
+        action[-1] = -1
+
+        action, completed = self.move_line(obs, action)
+        return action, {'stage': "move_line", 'completed': False}
 
 class LiftPolicy(BaseHumanPolicy):
     def __init__(self, env):
@@ -250,7 +259,6 @@ class LiftPolicy(BaseHumanPolicy):
         self.completed[curr_stage] = completed
         return action, {'stage': curr_stage, 'completed': completed}
 
-
 class PickPlacePolicy(BaseHumanPolicy):
     def __init__(self, env):
         super().__init__(env)
@@ -335,7 +343,7 @@ class PickPlacePolicy(BaseHumanPolicy):
         Increase tolerance since the arm is hard to stretch out
         """
         rel_pos = obs[f'{self.obj_name}_to_{self.obj_name}_bin_pos']
-        if self.obj_name in ['Cereal', 'Can']:
+        if self.obj_name in ['Cereal', 'Can', 'Bread']:
             tol = 0.03
         else:
             tol = self.pos_tol
