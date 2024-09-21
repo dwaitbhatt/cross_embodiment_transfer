@@ -167,17 +167,18 @@ def main():
     src_buffer = replay_buffer.ReplayBuffer(
         obs_shape=src_env.observation_space.shape,
         action_shape=src_env.action_space.shape,
-        capacity=int(1e6),
+        capacity=int(2e6),
         batch_size=params['batch_size'],
         device=device
     )
+    print(f"Source buffer obs shape: {src_buffer.obses.shape}, action shape: {src_buffer.actions.shape}")
     demo_paths = utils.load_episodes(pathlib.Path(params['src_buffer']), params['src_env']['robot_obs_keys'])
     src_buffer.add_rollouts(demo_paths)
 
     tgt_buffer = replay_buffer.ReplayBuffer(
         obs_shape=tgt_env.observation_space.shape,
         action_shape=tgt_env.action_space.shape,
-        capacity=int(1e6),
+        capacity=int(2e6),
         batch_size=params['batch_size'],
         device=device
     )

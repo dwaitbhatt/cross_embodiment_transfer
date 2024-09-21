@@ -12,7 +12,7 @@ from human_policy import ReachPolicy, LiftPolicy, BaseHumanPolicy, PickPlacePoli
 
 np.set_printoptions(precision=4, suppress=True)
 
-BOUND_MIN = np.array([-0.3, -0.4, 0.75])     
+BOUND_MIN = np.array([-0.3, -0.4, 0.7])     
 BOUND_MAX = np.array([0.3, 0.4, 1.2])
 REWARD_THRESH = {"Reach": 50, "Lift": 50, "PickPlaceBread": 50, "Stack": 50, "TrackCube": 10}
 
@@ -245,7 +245,7 @@ def osc_to_jv(env_name, robots, num_episodes=64, random_demos=False, render=Fals
 
     if env_name == "Reach":
         policy_cls = ReachPolicy
-        env_kwargs = {"horizon": 100, "table_full_size": (0.6, 0.6, 0.05)}#, "mount_type": None}
+        env_kwargs = {"horizon": 100, "table_full_size": (0.6, 0.6, 0.05), "mount_type": None}
     elif env_name == "TrackCube":
         policy_cls = TrackCubePolicy
         env_kwargs = {"horizon": 100, "table_full_size": (0.6, 0.6, 0.05), 
@@ -291,7 +291,7 @@ def osc_to_jv(env_name, robots, num_episodes=64, random_demos=False, render=Fals
     episodes_saved = 0
     while episodes_saved < num_episodes:
 
-        if episodes_saved % 2 == 0:
+        if episodes_saved % 2 == 0 or random_demos:
             reset_target = False
         elif env_name == "Reach":
             reset_target = True
@@ -304,9 +304,6 @@ def osc_to_jv(env_name, robots, num_episodes=64, random_demos=False, render=Fals
             else:
                 episode, ep_info = collect_human_episode(env, policy, render=render, 
                     return_joints=True, reset_target=reset_target)
-
-            # if episode is None: 
-            #     reset_target = False
 
         task_xml, task_init_state = ep_info['task_info']
         desired_jps, gripper_actions = ep_info['joint_info']

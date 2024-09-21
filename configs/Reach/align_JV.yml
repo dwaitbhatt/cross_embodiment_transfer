@@ -19,13 +19,13 @@ tgt_env:
     - robot0_joint_pos_sin
   obj_obs_keys:
     - target_to_robot0_eef_pos
-src_buffer: random_demos/Reach/Panda/JOINT_VELOCITY
-tgt_buffer: random_demos/Reach/Panda/JOINT_VELOCITY
+src_buffer: random_demos/Reach_200/Panda/JOINT_VELOCITY
+tgt_buffer: random_demos/Reach_200/Sawyer/JOINT_VELOCITY
 lat_obs_dim: 4
 lat_act_dim: 4
-tgt_align_timesteps: 200000
+tgt_align_timesteps: 2000000
 batch_size: 512
-src_model_dir: trained_models/ReachEasy/Panda_JV
+src_model_dir: trained_models/AdjustedReachMedium/Panda_JV
 seed: 42
 save_buffer: False
 logdir_prefix: null
@@ -34,4 +34,4 @@ evaluation:
   interval: 2000
   save_interval: 20000
 save_freq: 50000
-suffix: align_sanity_check_oldtasks_10krandom
+suffix: align_initeefposfix

@@ -59,13 +59,13 @@ def main():
     agent = Agent(obs_dims, act_dims, device)
     agent.load(pathlib.Path(params['model_dir']))
 
-
+    success_count = 0
     for i in range(params['num_episodes']):
-        # if i % 5 == 0:
-        #     obs, _ = env.reset()
-        # elif params['env_name'] == 'Reach':
-        #     obs = env.reset_target()
-        #     obs = np.concatenate([obs[k] for k in params['robot_obs_keys']+params['obj_obs_keys']])
+        if i % 2 == 0:
+            obs, _ = env.reset()
+        elif params['env_name'] == 'Reach':
+            obs = env.reset_target()
+            obs = np.concatenate([obs[k] for k in params['robot_obs_keys']+params['obj_obs_keys']])
         # else:
         #     obs, _ = env.reset()
         obs, _ = env.reset()
@@ -77,9 +77,11 @@ def main():
             obs, reward, done, _, _ = env.step(action)
             episode_reward += reward   
             env.render()
+        if env._check_success():
+            success_count += 1
 
         print(f"Episode {i}, return {episode_reward}")
-
+    print(f"Success rate: {success_count} / {params['num_episodes']}")
 
 if __name__ == '__main__':
 	main()
